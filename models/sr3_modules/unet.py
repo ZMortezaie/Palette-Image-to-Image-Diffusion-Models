@@ -41,7 +41,7 @@ class UNet(nn.Module):
             is_last = (ind == num_mults - 1)
             use_attn = (now_res in attn_res)
             channel_mult = inner_channel * channel_mults[ind]
-            for _ in range(0, res_blocks):
+            for _ in range(res_blocks):
                 downs.append(ResnetBlocWithAttn(
                     pre_channel, channel_mult, noise_level_emb_dim=noise_level_channel, norm_groups=norm_groups, dropout=dropout, with_attn=use_attn))
                 feat_channels.append(channel_mult)
@@ -64,7 +64,7 @@ class UNet(nn.Module):
             is_last = (ind < 1)
             use_attn = (now_res in attn_res)
             channel_mult = inner_channel * channel_mults[ind]
-            for _ in range(0, res_blocks+1):
+            for _ in range(res_blocks+1):
                 ups.append(ResnetBlocWithAttn(
                     pre_channel+feat_channels.pop(), channel_mult, noise_level_emb_dim=noise_level_channel, norm_groups=norm_groups,
                         dropout=dropout, with_attn=use_attn))
@@ -83,18 +83,11 @@ class UNet(nn.Module):
 
         feats = []
         for layer in self.downs:
-            if isinstance(layer, ResnetBlocWithAttn):
-                x = layer(x, t)
-            else:
-                x = layer(x)
+            x = layer(x, t) if isinstance(layer, ResnetBlocWithAttn) else layer(x)
             feats.append(x)
 
         for layer in self.mid:
-            if isinstance(layer, ResnetBlocWithAttn):
-                x = layer(x, t)
-            else:
-                x = layer(x)
-
+            x = layer(x, t) if isinstance(layer, ResnetBlocWithAttn) else layer(x)
         for layer in self.ups:
             if isinstance(layer, ResnetBlocWithAttn):
                 x = layer(torch.cat((x, feats.pop()), dim=1), t)

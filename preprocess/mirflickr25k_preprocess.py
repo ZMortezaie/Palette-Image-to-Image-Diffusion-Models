@@ -36,20 +36,24 @@ if __name__ == '__main__':
 
     all_color, all_l = load_data(home)
     image_color, image_l = convert_abl(all_color, all_l)
-    
-    color_save_path, gray_save_path  = '{}/color'.format(image_save_path), '{}/gray'.format(image_save_path)
+
+    color_save_path, gray_save_path = (
+        f'{image_save_path}/color',
+        f'{image_save_path}/gray',
+    )
+
     os.makedirs(color_save_path, exist_ok=True)
     os.makedirs(gray_save_path, exist_ok=True)
     for i in range(image_color.shape[0]):
-        cv2.imwrite('{}/{}.png'.format(color_save_path, str(i).zfill(5)), image_color[i])
+        cv2.imwrite(f'{color_save_path}/{str(i).zfill(5)}.png', image_color[i])
     for i in range(image_l.shape[0]):
-        cv2.imwrite('{}/{}.png'.format(gray_save_path, str(i).zfill(5)), image_l[i])
-    
+        cv2.imwrite(f'{gray_save_path}/{str(i).zfill(5)}.png', image_l[i])
+
     os.makedirs(flist_save_path, exist_ok=True)
     arr = np.random.permutation(25000)
-    with open('{}/train.flist'.format(flist_save_path), 'w') as f:
+    with open(f'{flist_save_path}/train.flist', 'w') as f:
         for item in arr[:24000]:
             print(str(item).zfill(5), file=f)
-    with open('{}/test.flist'.format(flist_save_path), 'w') as f:
+    with open(f'{flist_save_path}/test.flist', 'w') as f:
         for item in arr[24000:]:
             print(str(item).zfill(5), file=f)

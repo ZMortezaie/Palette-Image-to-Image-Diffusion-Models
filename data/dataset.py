@@ -17,10 +17,10 @@ def is_image_file(filename):
 
 def make_dataset(dir):
     if os.path.isfile(dir):
-        images = [i for i in np.genfromtxt(dir, dtype=np.str, encoding='utf-8')]
+        images = list(np.genfromtxt(dir, dtype=np.str, encoding='utf-8'))
     else:
         images = []
-        assert os.path.isdir(dir), '%s is not a valid directory' % dir
+        assert os.path.isdir(dir), f'{dir} is not a valid directory'
         for root, _, fnames in sorted(os.walk(dir)):
             for fname in sorted(fnames):
                 if is_image_file(fname):
@@ -35,10 +35,7 @@ def pil_loader(path):
 class InpaintDataset(data.Dataset):
     def __init__(self, data_root, mask_config={}, data_len=-1, image_size=[256, 256], loader=pil_loader):
         imgs = make_dataset(data_root)
-        if data_len > 0:
-            self.imgs = imgs[:int(data_len)]
-        else:
-            self.imgs = imgs
+        self.imgs = imgs[:int(data_len)] if data_len > 0 else imgs
         self.tfs = transforms.Compose([
                 transforms.Resize((image_size[0], image_size[1])),
                 transforms.ToTensor(),
@@ -50,19 +47,19 @@ class InpaintDataset(data.Dataset):
         self.image_size = image_size
 
     def __getitem__(self, index):
-        ret = {}
         path = self.imgs[index]
         img = self.tfs(self.loader(path))
         mask = self.get_mask()
         cond_image = img*(1. - mask) + mask*torch.randn_like(img)
         mask_img = img*(1. - mask) + mask
 
-        ret['gt_image'] = img
-        ret['cond_image'] = cond_image
-        ret['mask_image'] = mask_img
-        ret['mask'] = mask
-        ret['path'] = path.rsplit("/")[-1].rsplit("\\")[-1]
-        return ret
+        return {
+            'gt_image': img,
+            'cond_image': cond_image,
+            'mask_image': mask_img,
+            'mask': mask,
+            'path': path.rsplit("/")[-1].rsplit("\\")[-1],
+        }
 
     def __len__(self):
         return len(self.imgs)
@@ -81,9 +78,7 @@ class InpaintDataset(data.Dataset):
             regular_mask = bbox2mask(self.image_size, random_bbox())
             irregular_mask = brush_stroke_mask(self.image_size, )
             mask = regular_mask | irregular_mask
-        elif self.mask_mode == 'file':
-            pass
-        else:
+        elif self.mask_mode != 'file':
             raise NotImplementedError(
                 f'Mask mode {self.mask_mode} has not been implemented.')
         return torch.from_numpy(mask).permute(2,0,1)
@@ -92,10 +87,7 @@ class InpaintDataset(data.Dataset):
 class UncroppingDataset(data.Dataset):
     def __init__(self, data_root, mask_config={}, data_len=-1, image_size=[256, 256], loader=pil_loader):
         imgs = make_dataset(data_root)
-        if data_len > 0:
-            self.imgs = imgs[:int(data_len)]
-        else:
-            self.imgs = imgs
+        self.imgs = imgs[:int(data_len)] if data_len > 0 else imgs
         self.tfs = transforms.Compose([
                 transforms.Resize((image_size[0], image_size[1])),
                 transforms.ToTensor(),
@@ -107,19 +99,19 @@ class UncroppingDataset(data.Dataset):
         self.image_size = image_size
 
     def __getitem__(self, index):
-        ret = {}
         path = self.imgs[index]
         img = self.tfs(self.loader(path))
         mask = self.get_mask()
         cond_image = img*(1. - mask) + mask*torch.randn_like(img)
         mask_img = img*(1. - mask) + mask
 
-        ret['gt_image'] = img
-        ret['cond_image'] = cond_image
-        ret['mask_image'] = mask_img
-        ret['mask'] = mask
-        ret['path'] = path.rsplit("/")[-1].rsplit("\\")[-1]
-        return ret
+        return {
+            'gt_image': img,
+            'cond_image': cond_image,
+            'mask_image': mask_img,
+            'mask': mask,
+            'path': path.rsplit("/")[-1].rsplit("\\")[-1],
+        }
 
     def __len__(self):
         return len(self.imgs)
@@ -127,16 +119,14 @@ class UncroppingDataset(data.Dataset):
     def get_mask(self):
         if self.mask_mode == 'manual':
             mask = bbox2mask(self.image_size, self.mask_config['shape'])
-        elif self.mask_mode == 'fourdirection' or self.mask_mode == 'onedirection':
+        elif self.mask_mode in ['fourdirection', 'onedirection']:
             mask = bbox2mask(self.image_size, random_cropping_bbox(mask_mode=self.mask_mode))
         elif self.mask_mode == 'hybrid':
             if np.random.randint(0,2)<1:
                 mask = bbox2mask(self.image_size, random_cropping_bbox(mask_mode='onedirection'))
             else:
                 mask = bbox2mask(self.image_size, random_cropping_bbox(mask_mode='fourdirection'))
-        elif self.mask_mode == 'file':
-            pass
-        else:
+        elif self.mask_mode != 'file':
             raise NotImplementedError(
                 f'Mask mode {self.mask_mode} has not been implemented.')
         return torch.from_numpy(mask).permute(2,0,1)
@@ -146,10 +136,7 @@ class ColorizationDataset(data.Dataset):
     def __init__(self, data_root, data_flist, data_len=-1, image_size=[224, 224], loader=pil_loader):
         self.data_root = data_root
         flist = make_dataset(data_flist)
-        if data_len > 0:
-            self.flist = flist[:int(data_len)]
-        else:
-            self.flist = flist
+        self.flist = flist[:int(data_len)] if data_len > 0 else flist
         self.tfs = transforms.Compose([
                 transforms.Resize((image_size[0], image_size[1])),
                 transforms.ToTensor(),
@@ -159,16 +146,12 @@ class ColorizationDataset(data.Dataset):
         self.image_size = image_size
 
     def __getitem__(self, index):
-        ret = {}
-        file_name = str(self.flist[index]).zfill(5) + '.png'
+        file_name = f'{str(self.flist[index]).zfill(5)}.png'
 
-        img = self.tfs(self.loader('{}/{}/{}'.format(self.data_root, 'color', file_name)))
-        cond_image = self.tfs(self.loader('{}/{}/{}'.format(self.data_root, 'gray', file_name)))
+        img = self.tfs(self.loader(f'{self.data_root}/color/{file_name}'))
+        cond_image = self.tfs(self.loader(f'{self.data_root}/gray/{file_name}'))
 
-        ret['gt_image'] = img
-        ret['cond_image'] = cond_image
-        ret['path'] = file_name
-        return ret
+        return {'gt_image': img, 'cond_image': cond_image, 'path': file_name}
 
     def __len__(self):
         return len(self.flist)

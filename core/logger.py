@@ -37,7 +37,7 @@ class InfoLogger():
         l = logging.getLogger(logger_name)
         formatter = logging.Formatter(
             '%(asctime)s.%(msecs)03d - %(levelname)s: %(message)s', datefmt='%y-%m-%d %H:%M:%S')
-        log_file = os.path.join(root, '{}.log'.format(phase))
+        log_file = os.path.join(root, f'{phase}.log')
         fh = logging.FileHandler(log_file, mode='a+')
         fh.setFormatter(formatter)
         l.setLevel(level)
@@ -131,7 +131,7 @@ class VisualWriter():
                 if add_data is not None:
                     # add phase(train/valid) tag
                     if name not in self.tag_mode_exceptions:
-                        tag = '{}/{}'.format(self.phase, tag)
+                        tag = f'{self.phase}/{tag}'
                     add_data(tag, data, self.iter, *args, **kwargs)
             return wrapper
         else:
@@ -165,4 +165,4 @@ class LogTracker:
         return self._data.average[key]
 
     def result(self):
-        return {'{}/{}'.format(self.phase, k):v for k, v in dict(self._data.average).items()}
+        return {f'{self.phase}/{k}': v for k, v in dict(self._data.average).items()}

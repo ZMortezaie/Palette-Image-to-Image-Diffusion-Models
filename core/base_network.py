@@ -33,7 +33,8 @@ class BaseNetwork(nn.Module):
         elif self.init_type == 'none':  # uses pytorch's default init method
           m.reset_parameters()
         else:
-          raise NotImplementedError('initialization method [%s] is not implemented' % self.init_type)
+          raise NotImplementedError(
+              f'initialization method [{self.init_type}] is not implemented')
         if hasattr(m, 'bias') and m.bias is not None:
           nn.init.constant_(m.bias.data, 0.0)
 

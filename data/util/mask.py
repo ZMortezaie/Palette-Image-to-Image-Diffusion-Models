@@ -22,14 +22,8 @@ def random_cropping_bbox(img_shape=(256,256), mask_mode='onedirection'):
         target_area = (h*w)//2
         width = np.random.randint(target_area//h, w)
         height = target_area//width
-        if h==height:
-            top = 0
-        else:
-            top = np.random.randint(0, h-height)
-        if w==width:
-            left = 0
-        else:
-            left = np.random.randint(0, w-width)
+        top = 0 if h==height else np.random.randint(0, h-height)
+        left = 0 if w==width else np.random.randint(0, w-width)
     return (top, left, height, width)
 
 def random_bbox(img_shape=(256,256), max_bbox_shape=(128, 128), max_bbox_delta=40, min_margin=20):
@@ -193,8 +187,6 @@ def brush_stroke_mask(img_shape,
         angle_min = mean_angle - angle_min_list[loop_n]
         angle_max = mean_angle + angle_max_list[loop_n]
         angles = []
-        vertex = []
-
         # set random angle on each vertex
         angles = np.random.uniform(angle_min, angle_max, size=num_vertex)
         reverse_mask = (np.arange(num_vertex, dtype=np.float32) % 2) == 0
@@ -202,8 +194,7 @@ def brush_stroke_mask(img_shape,
 
         h, w = mask.size
 
-        # set random vertices
-        vertex.append((np.random.randint(0, w), np.random.randint(0, h)))
+        vertex = [(np.random.randint(0, w), np.random.randint(0, h))]
         r_list = np.random.normal(
             loc=average_radius, scale=average_radius // 2, size=num_vertex)
         for i in range(num_vertex):

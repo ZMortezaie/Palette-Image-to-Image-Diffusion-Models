@@ -14,10 +14,10 @@ def is_image_file(filename):
 
 def make_dataset(dir):
     if os.path.isfile(dir):
-        images = [i for i in np.genfromtxt(dir, dtype=np.str, encoding='utf-8')]
+        images = list(np.genfromtxt(dir, dtype=np.str, encoding='utf-8'))
     else:
         images = []
-        assert os.path.isdir(dir), '%s is not a valid directory' % dir
+        assert os.path.isdir(dir), f'{dir} is not a valid directory'
         for root, _, fnames in sorted(os.walk(dir)):
             for fname in sorted(fnames):
                 if is_image_file(fname):
@@ -41,8 +41,7 @@ class BaseDataset(data.Dataset):
 
     def __getitem__(self, index):
         path = self.imgs[index]
-        img = self.tfs(self.loader(path))
-        return img
+        return self.tfs(self.loader(path))
 
     def __len__(self):
         return len(self.imgs)

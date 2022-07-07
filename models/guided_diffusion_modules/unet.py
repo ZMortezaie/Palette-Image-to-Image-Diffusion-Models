@@ -36,10 +36,7 @@ class EmbedSequential(nn.Sequential, EmbedBlock):
 
     def forward(self, x, emb):
         for layer in self:
-            if isinstance(layer, EmbedBlock):
-                x = layer(x, emb)
-            else:
-                x = layer(x)
+            x = layer(x, emb) if isinstance(layer, EmbedBlock) else layer(x)
         return x
 
 class Upsample(nn.Module):

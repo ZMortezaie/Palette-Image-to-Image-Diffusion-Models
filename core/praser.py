@@ -13,13 +13,13 @@ def init_obj(opt, logger, *args, default_file_name='default file', given_module=
     and returns the instance initialized with corresponding args.
     """ 
     if opt is None or len(opt)<1:
-        logger.info('Option is None when initialize {}'.format(init_type))
+        logger.info(f'Option is None when initialize {init_type}')
         return None
-    
+
     ''' default format is dict with name key '''
     if isinstance(opt, str):
         opt = {'name': opt}
-        logger.warning('Config is a str, converts to a dict {}'.format(opt))
+        logger.warning(f'Config is a str, converts to a dict {opt}')
 
     name = opt['name']
     ''' name can be list, indicates the file and class name of function '''
@@ -32,7 +32,7 @@ def init_obj(opt, logger, *args, default_file_name='default file', given_module=
             module = given_module
         else:
             module = importlib.import_module(file_name)
-        
+
         attr = getattr(module, class_name)
         kwargs = opt.get('args', {})
         kwargs.update(modify_kwargs)
@@ -73,9 +73,7 @@ class NoneDict(dict):
 def dict_to_nonedict(opt):
     """ convert to NoneDict, which return None for missing key. """
     if isinstance(opt, dict):
-        new_opt = dict()
-        for key, sub_opt in opt.items():
-            new_opt[key] = dict_to_nonedict(sub_opt)
+        new_opt = {key: dict_to_nonedict(sub_opt) for key, sub_opt in opt.items()}
         return NoneDict(**new_opt)
     elif isinstance(opt, list):
         return [dict_to_nonedict(sub_opt) for sub_opt in opt]
@@ -108,27 +106,26 @@ def parse(args):
         opt['gpu_ids'] = [int(id) for id in args.gpu_ids.split(',')]
     if args.batch is not None:
         opt['datasets'][opt['phase']]['dataloader']['args']['batch_size'] = args.batch
- 
-    ''' set cuda environment '''
-    if len(opt['gpu_ids']) > 1:
-        opt['distributed'] = True
-    else:
-        opt['distributed'] = False
 
+    ''' set cuda environment '''
+    opt['distributed'] = len(opt['gpu_ids']) > 1
     ''' update name '''
     if args.debug:
-        opt['name'] = 'debug_{}'.format(opt['name'])
+        opt['name'] = f"debug_{opt['name']}"
     elif opt['finetune_norm']:
-        opt['name'] = 'finetune_{}'.format(opt['name'])
+        opt['name'] = f"finetune_{opt['name']}"
     else:
-        opt['name'] = '{}_{}'.format(opt['phase'], opt['name'])
+        opt['name'] = f"{opt['phase']}_{opt['name']}"
 
     ''' set log directory '''
-    experiments_root = os.path.join(opt['path']['base_dir'], '{}_{}'.format(opt['name'], get_timestamp()))
+    experiments_root = os.path.join(
+        opt['path']['base_dir'], f"{opt['name']}_{get_timestamp()}"
+    )
+
     mkdirs(experiments_root)
 
     ''' save json '''
-    write_json(opt, '{}/config.json'.format(experiments_root))
+    write_json(opt, f'{experiments_root}/config.json')
 
     ''' change folder relative hierarchy '''
     opt['path']['experiments_root'] = experiments_root
@@ -141,7 +138,7 @@ def parse(args):
     if 'debug' in opt['name']:
         opt['train'].update(opt['debug'])
 
-    ''' code backup ''' 
+    ''' code backup '''
     for name in os.listdir('.'):
         if name in ['config', 'models', 'core', 'slurm', 'data']:
             shutil.copytree(name, os.path.join(opt['path']['code'], name), ignore=shutil.ignore_patterns("*.pyc", "__pycache__"))

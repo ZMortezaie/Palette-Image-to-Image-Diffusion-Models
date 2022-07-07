@@ -12,7 +12,7 @@ class Network(BaseNetwork):
             from .sr3_modules.unet import UNet
         elif module_name == 'guided_diffusion':
             from .guided_diffusion_modules.unet import UNet
-        
+
         self.denoise_fn = UNet(**unet)
         self.beta_schedule = beta_schedule
 
@@ -90,10 +90,10 @@ class Network(BaseNetwork):
 
         assert self.num_timesteps > sample_num, 'num_timesteps must greater than sample_num'
         sample_inter = (self.num_timesteps//sample_num)
-        
+
         y_t = default(y_t, lambda: torch.randn_like(y_cond))
         ret_arr = y_t
-        for i in tqdm(reversed(range(0, self.num_timesteps)), desc='sampling loop time step', total=self.num_timesteps):
+        for i in tqdm(reversed(range(self.num_timesteps)), desc='sampling loop time step', total=self.num_timesteps):
             t = torch.full((b,), i, device=y_cond.device, dtype=torch.long)
             y_t = self.p_sample(y_t, t, y_cond=y_cond)
             if mask is not None:
@@ -117,11 +117,10 @@ class Network(BaseNetwork):
 
         if mask is not None:
             noise_hat = self.denoise_fn(torch.cat([y_cond, y_noisy*mask+(1.-mask)*y_0], dim=1), sample_gammas)
-            loss = self.loss_fn(mask*noise, mask*noise_hat)
+            return self.loss_fn(mask*noise, mask*noise_hat)
         else:
             noise_hat = self.denoise_fn(torch.cat([y_cond, y_noisy], dim=1), sample_gammas)
-            loss = self.loss_fn(noise, noise_hat)
-        return loss
+            return self.loss_fn(noise, noise_hat)
 
 
 # gaussian diffusion trainer class

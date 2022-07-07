@@ -84,11 +84,13 @@ class BaseModel():
         """ print network structure, only work on GPU 0 """
         if self.opt['global_rank'] !=0:
             return
-        if isinstance(network, nn.DataParallel) or isinstance(network, nn.parallel.DistributedDataParallel):
+        if isinstance(
+            network, (nn.DataParallel, nn.parallel.DistributedDataParallel)
+        ):
             network = network.module
-        
+
         s, n = str(network), sum(map(lambda x: x.numel(), network.parameters()))
-        net_struc_str = '{}'.format(network.__class__.__name__)
+        net_struc_str = f'{network.__class__.__name__}'
         self.logger.info('Network structure: {}, with parameters: {:,d}'.format(net_struc_str, n))
         self.logger.info(s)
 
@@ -96,9 +98,11 @@ class BaseModel():
         """ save network structure, only work on GPU 0 """
         if self.opt['global_rank'] !=0:
             return
-        save_filename = '{}_{}.pth'.format(self.epoch, network_label)
+        save_filename = f'{self.epoch}_{network_label}.pth'
         save_path = os.path.join(self.opt['path']['checkpoint'], save_filename)
-        if isinstance(network, nn.DataParallel) or isinstance(network, nn.parallel.DistributedDataParallel):
+        if isinstance(
+            network, (nn.DataParallel, nn.parallel.DistributedDataParallel)
+        ):
             network = network.module
         state_dict = network.state_dict()
         for key, param in state_dict.items():
@@ -107,17 +111,19 @@ class BaseModel():
 
     def load_network(self, network, network_label, strict=True):
         if self.opt['path']['resume_state'] is None:
-            return 
+            return
         self.logger.info('Beign loading pretrained model [{:s}] ...'.format(network_label))
 
-        model_path = "{}_{}.pth".format(self. opt['path']['resume_state'], network_label)
-        
+        model_path = f"{self. opt['path']['resume_state']}_{network_label}.pth"
+
         if not os.path.exists(model_path):
             self.logger.warning('Pretrained model in [{:s}] is not existed, Skip it'.format(model_path))
             return
 
         self.logger.info('Loading pretrained model from [{:s}] ...'.format(model_path))
-        if isinstance(network, nn.DataParallel) or isinstance(network, nn.parallel.DistributedDataParallel):
+        if isinstance(
+            network, (nn.DataParallel, nn.parallel.DistributedDataParallel)
+        ):
             network = network.module
         network.load_state_dict(torch.load(model_path, map_location = lambda storage, loc: Util.set_device(storage)), strict=strict)
 
@@ -131,7 +137,7 @@ class BaseModel():
             state['schedulers'].append(s.state_dict())
         for o in self.optimizers:
             state['optimizers'].append(o.state_dict())
-        save_filename = '{}.state'.format(self.epoch)
+        save_filename = f'{self.epoch}.state'
         save_path = os.path.join(self.opt['path']['checkpoint'], save_filename)
         torch.save(state, save_path)
 
@@ -141,20 +147,26 @@ class BaseModel():
             return
         self.logger.info('Beign loading training states'.format())
         assert isinstance(self.optimizers, list) and isinstance(self.schedulers, list), 'optimizers and schedulers must be a list.'
-        
-        state_path = "{}.state".format(self. opt['path']['resume_state'])
-        
+
+        state_path = f"{self. opt['path']['resume_state']}.state"
+
         if not os.path.exists(state_path):
             self.logger.warning('Training state in [{:s}] is not existed, Skip it'.format(state_path))
             return
 
         self.logger.info('Loading training state for [{:s}] ...'.format(state_path))
         resume_state = torch.load(state_path, map_location = lambda storage, loc: self.set_device(storage))
-        
+
         resume_optimizers = resume_state['optimizers']
         resume_schedulers = resume_state['schedulers']
-        assert len(resume_optimizers) == len(self.optimizers), 'Wrong lengths of optimizers {} != {}'.format(len(resume_optimizers), len(self.optimizers))
-        assert len(resume_schedulers) == len(self.schedulers), 'Wrong lengths of schedulers {} != {}'.format(len(resume_schedulers), len(self.schedulers))
+        assert len(resume_optimizers) == len(
+            self.optimizers
+        ), f'Wrong lengths of optimizers {len(resume_optimizers)} != {len(self.optimizers)}'
+
+        assert len(resume_schedulers) == len(
+            self.schedulers
+        ), f'Wrong lengths of schedulers {len(resume_schedulers)} != {len(self.schedulers)}'
+
         for i, o in enumerate(resume_optimizers):
             self.optimizers[i].load_state_dict(o)
         for i, s in enumerate(resume_schedulers):

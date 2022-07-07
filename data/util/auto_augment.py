@@ -107,8 +107,7 @@ def transform_matrix_offset_center(matrix, x, y):
     o_y = float(y) / 2 + 0.5
     offset_matrix = np.array([[1, 0, o_x], [0, 1, o_y], [0, 0, 1]])
     reset_matrix = np.array([[1, 0, -o_x], [0, 1, -o_y], [0, 0, 1]])
-    transform_matrix = offset_matrix @ matrix @ reset_matrix
-    return transform_matrix
+    return offset_matrix @ matrix @ reset_matrix
 
 
 def shear_x(img, magnitude):
@@ -268,11 +267,8 @@ def cutout(org_img, magnitude=None):
     bottom = top + mask_size
     right = left + mask_size
 
-    if top < 0:
-        top = 0
-    if left < 0:
-        left = 0
-
+    top = max(top, 0)
+    left = max(left, 0)
     img[top:bottom, left:right, :].fill(mask_val)
 
     img = Image.fromarray(img)
@@ -295,7 +291,7 @@ class Cutout(object):
         bottom = top + self.length
         right = left + self.length
 
-        top = 0 if top < 0 else top
+        top = max(top, 0)
         left = 0 if left < 0 else top
 
         img[top:bottom, left:right, :] = mask_val
