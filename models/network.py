@@ -5,6 +5,8 @@ from functools import partial
 import numpy as np
 from tqdm import tqdm
 from core.base_network import BaseNetwork
+
+
 class Network(BaseNetwork):
     def __init__(self, unet, beta_schedule, module_name='sr3', **kwargs):
         super(Network, self).__init__(**kwargs)
@@ -15,6 +17,8 @@ class Network(BaseNetwork):
         
         self.denoise_fn = UNet(**unet)
         self.beta_schedule = beta_schedule
+        self.num_timesteps = None
+        self.loss_fn = None
 
     def set_loss(self, loss_fn):
         self.loss_fn = loss_fn
@@ -138,6 +142,7 @@ def extract(a, t, x_shape=(1,1,1,1)):
     out = a.gather(-1, t)
     return out.reshape(b, *((1,) * (len(x_shape) - 1)))
 
+
 # beta_schedule function
 def _warmup_beta(linear_start, linear_end, n_timestep, warmup_frac):
     betas = linear_end * np.ones(n_timestep, dtype=np.float64)
@@ -145,6 +150,7 @@ def _warmup_beta(linear_start, linear_end, n_timestep, warmup_frac):
     betas[:warmup_time] = np.linspace(
         linear_start, linear_end, warmup_time, dtype=np.float64)
     return betas
+
 
 def make_beta_schedule(schedule, n_timestep, linear_start=1e-6, linear_end=1e-2, cosine_s=8e-3):
     if schedule == 'quad':
@@ -177,5 +183,3 @@ def make_beta_schedule(schedule, n_timestep, linear_start=1e-6, linear_end=1e-2,
     else:
         raise NotImplementedError(schedule)
     return betas
-
-

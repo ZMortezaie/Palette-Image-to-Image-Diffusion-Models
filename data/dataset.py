@@ -12,8 +12,10 @@ IMG_EXTENSIONS = [
     '.png', '.PNG', '.ppm', '.PPM', '.bmp', '.BMP',
 ]
 
+
 def is_image_file(filename):
     return any(filename.endswith(extension) for extension in IMG_EXTENSIONS)
+
 
 def make_dataset(dir):
     if os.path.isfile(dir):
@@ -29,8 +31,10 @@ def make_dataset(dir):
 
     return images
 
+
 def pil_loader(path):
     return Image.open(path).convert('RGB')
+
 
 class InpaintDataset(data.Dataset):
     def __init__(self, data_root, mask_config={}, data_len=-1, image_size=[256, 256], loader=pil_loader):
@@ -40,9 +44,9 @@ class InpaintDataset(data.Dataset):
         else:
             self.imgs = imgs
         self.tfs = transforms.Compose([
-                transforms.Resize((image_size[0], image_size[1])),
-                transforms.ToTensor(),
-                transforms.Normalize(mean=[0.5, 0.5, 0.5], std=[0.5,0.5, 0.5])
+            transforms.Resize((image_size[0], image_size[1])),
+            transforms.ToTensor(),
+            transforms.Normalize(mean=[0.5, 0.5, 0.5], std=[0.5, 0.5, 0.5])
         ])
         self.loader = loader
         self.mask_config = mask_config
@@ -54,8 +58,8 @@ class InpaintDataset(data.Dataset):
         path = self.imgs[index]
         img = self.tfs(self.loader(path))
         mask = self.get_mask()
-        cond_image = img*(1. - mask) + mask*torch.randn_like(img)
-        mask_img = img*(1. - mask) + mask
+        cond_image = img * (1. - mask) + mask * torch.randn_like(img)
+        mask_img = img * (1. - mask) + mask
 
         ret['gt_image'] = img
         ret['cond_image'] = cond_image
@@ -72,7 +76,7 @@ class InpaintDataset(data.Dataset):
             mask = bbox2mask(self.image_size, random_bbox())
         elif self.mask_mode == 'center':
             h, w = self.image_size
-            mask = bbox2mask(self.image_size, (h//4, w//4, h//2, w//2))
+            mask = bbox2mask(self.image_size, (h // 4, w // 4, h // 2, w // 2))
         elif self.mask_mode == 'irregular':
             mask = get_irregular_mask(self.image_size)
         elif self.mask_mode == 'free_form':
@@ -86,7 +90,7 @@ class InpaintDataset(data.Dataset):
         else:
             raise NotImplementedError(
                 f'Mask mode {self.mask_mode} has not been implemented.')
-        return torch.from_numpy(mask).permute(2,0,1)
+        return torch.from_numpy(mask).permute(2, 0, 1)
 
 
 class UncroppingDataset(data.Dataset):
@@ -97,9 +101,9 @@ class UncroppingDataset(data.Dataset):
         else:
             self.imgs = imgs
         self.tfs = transforms.Compose([
-                transforms.Resize((image_size[0], image_size[1])),
-                transforms.ToTensor(),
-                transforms.Normalize(mean=[0.5, 0.5, 0.5], std=[0.5,0.5, 0.5])
+            transforms.Resize((image_size[0], image_size[1])),
+            transforms.ToTensor(),
+            transforms.Normalize(mean=[0.5, 0.5, 0.5], std=[0.5, 0.5, 0.5])
         ])
         self.loader = loader
         self.mask_config = mask_config
@@ -111,8 +115,8 @@ class UncroppingDataset(data.Dataset):
         path = self.imgs[index]
         img = self.tfs(self.loader(path))
         mask = self.get_mask()
-        cond_image = img*(1. - mask) + mask*torch.randn_like(img)
-        mask_img = img*(1. - mask) + mask
+        cond_image = img * (1. - mask) + mask * torch.randn_like(img)
+        mask_img = img * (1. - mask) + mask
 
         ret['gt_image'] = img
         ret['cond_image'] = cond_image
@@ -130,7 +134,7 @@ class UncroppingDataset(data.Dataset):
         elif self.mask_mode == 'fourdirection' or self.mask_mode == 'onedirection':
             mask = bbox2mask(self.image_size, random_cropping_bbox(mask_mode=self.mask_mode))
         elif self.mask_mode == 'hybrid':
-            if np.random.randint(0,2)<1:
+            if np.random.randint(0, 2) < 1:
                 mask = bbox2mask(self.image_size, random_cropping_bbox(mask_mode='onedirection'))
             else:
                 mask = bbox2mask(self.image_size, random_cropping_bbox(mask_mode='fourdirection'))
@@ -139,7 +143,7 @@ class UncroppingDataset(data.Dataset):
         else:
             raise NotImplementedError(
                 f'Mask mode {self.mask_mode} has not been implemented.')
-        return torch.from_numpy(mask).permute(2,0,1)
+        return torch.from_numpy(mask).permute(2, 0, 1)
 
 
 class ColorizationDataset(data.Dataset):
@@ -151,9 +155,9 @@ class ColorizationDataset(data.Dataset):
         else:
             self.flist = flist
         self.tfs = transforms.Compose([
-                transforms.Resize((image_size[0], image_size[1])),
-                transforms.ToTensor(),
-                transforms.Normalize(mean=[0.5, 0.5, 0.5], std=[0.5,0.5, 0.5])
+            transforms.Resize((image_size[0], image_size[1])),
+            transforms.ToTensor(),
+            transforms.Normalize(mean=[0.5, 0.5, 0.5], std=[0.5, 0.5, 0.5])
         ])
         self.loader = loader
         self.image_size = image_size
@@ -174,3 +178,35 @@ class ColorizationDataset(data.Dataset):
         return len(self.flist)
 
 
+class CustomDataset(data.dataset):
+    def __init__(self, data_root: str, img_type: str = '.jpg', mask_type: str = '.png'):
+        self.images: list = [x for x in os.listdir(data_root) if x.startswith(img_type)]
+        self.mask: list = []
+
+    def __getitem__(self, item):
+        img = self.images[item]
+        msk = self.mask[item]
+
+        # @todo Open image with cv2 or Pillow
+
+        # @todo Conver to pytorch tensor
+
+        # @todo return as dict
+
+    def __len__(self):
+        return len(self.images)
+
+
+if __name__ == '__main__':
+
+    from matplotlib import pyplot as plt
+
+    MyData = CustomDataset()
+
+    for image, mask in MyData:
+        plt.subplot(1, 1, 2)
+        plt.imshow(image)
+        plt.subplot(1, 2, 2)
+        plt.imshow(mask)
+        plt.show()
+        break
