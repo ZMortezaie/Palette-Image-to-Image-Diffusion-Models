@@ -181,17 +181,30 @@ class ColorizationDataset(data.Dataset):
 class CustomDataset(data.dataset):
     def __init__(self, data_root: str, img_type: str = '.jpg', mask_type: str = '.png'):
         self.images: list = [x for x in os.listdir(data_root) if x.startswith(img_type)]
-        self.mask: list = []
+        self.mask: list = [x for x in os.listdir(data_root) if x.startswith(img_type)]
 
     def __getitem__(self, item):
         img = self.images[item]
-        msk = self.mask[item]
+        mask = self.mask[item]
 
         # @todo Open image with cv2 or Pillow
-
+        im = Image.open(img)
+        msk = Image.open(mask)
+        
         # @todo Conver to pytorch tensor
+        from torchvision import transforms as transforms
+    def __init__(self, transform=transforms.ToTensor()):
+        self.transform = transform
+        img_tensor = self.transform(im)
+        msk_tensor = self.transform(msk)
 
         # @todo return as dict
+        import tensorflow as tf
+    def make_dictionary(self,img_tensor,msk_tensor):
+        out = {}
+        out["image1"] = img_tensor[0]
+        out["mask1"] = msk_tensor[0]
+        return out
 
     def __len__(self):
         return len(self.images)
