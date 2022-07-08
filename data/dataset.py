@@ -189,9 +189,20 @@ class CustomDataset(data.dataset):
 
         # @todo Open image with cv2 or Pillow
 
+        im = Image.open(img)
+        msk = Image.open(mask)
+
         # @todo Conver to pytorch tensor
+        from torchvision import transforms as transforms
+
+    def __transform__(self, transform=transforms.ToTensor()):
+        self.transform = transform
+        img_tensor = self.transform("im")
+        msk_tensor = self.transform("msk")
 
         # @todo return as dict
+        return {'msk_tensor': img_tensor, 'msk_tensor': msk_tensor}
+
 
     def __len__(self):
         return len(self.images)
